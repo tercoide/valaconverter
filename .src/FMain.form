@@ -1,0 +1,64 @@
+# Gambas Form File 3.0
+
+{ Form Form
+  MoveScaled(0,0,130,88)
+  Arrangement = Arrange.Fill
+  { Panel1 Panel
+    MoveScaled(19,28,64.875,26.875)
+    Expand = True
+    Arrangement = Arrange.Horizontal
+    { txtGambasCode TextArea
+      MoveScaled(3,2,28,24)
+      Expand = True
+    }
+    { txtValaCode TextArea
+      MoveScaled(33,2,31,24)
+      Expand = True
+    }
+  }
+  { Panel3 Panel
+    MoveScaled(18,13,66.875,4.875)
+    { Button2 Button
+      MoveScaled(59,0,7,4)
+    }
+    { TextBox2 TextBox
+      MoveScaled(16,0,42,4)
+    }
+    { Label2 Label
+      MoveScaled(1,1,12,3)
+      Text = ("Gambas")
+    }
+  }
+  { Panel2 HBox
+    MoveScaled(18,18,66.875,4.875)
+    { Label1 Label
+      MoveScaled(1,1,12,3)
+      Text = ("Vala")
+    }
+    { TextBox1 TextBox
+      MoveScaled(16,0,42,4)
+    }
+    { Button1 Button
+      MoveScaled(59,0,7,4)
+    }
+  }
+  { Panel4 Panel
+    MoveScaled(18,24,48.875,3.875)
+    { RadioButton1 RadioButton
+      MoveScaled(0,0,16,3)
+      Text = ("Replace files")
+      Value = True
+    }
+    { RadioButton3 RadioButton
+      MoveScaled(34,0,14,3)
+      Text = ("Skip all existent")
+    }
+    { RadioButton2 RadioButton
+      MoveScaled(16,0,17,3)
+      Text = ("Ask on each file")
+    }
+  }
+  { TextArea1 TextArea
+    MoveScaled(20,57,23,17)
+  }
+}
