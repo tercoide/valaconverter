@@ -1,0 +1,91 @@
+' Gambas class file
+
+Create Static
+
+Public Function ConvertLine(sLine As String) As String
+
+  Dim sPartes As String[], s, s2 As String
+
+  sPartes = Split(sLine, " ", Chr(34), True, True)
+  For Each s In sPartes
+    s = ConvertBool(s)
+    s = ConvertLang(s)
+
+    s2 &= s & " "
+  Next
+
+  Return Trim(s2)
+
+End
+
+Public Function ConvertBool(sIn As String) As String
+
+  Select Case Lower(sIn)
+    Case "="
+      Return "=="
+    Case "&"
+      Return "&&"
+    Case "or"
+      Return "||"
+    Case "not"
+      Return "=="
+    Case "xor"
+      Return "!="
+
+    Case Else
+      Return sIn
+
+  End Select
+
+End
+
+Public Function ConvertLang(sIn As String) As String
+
+  Select Case Lower(sIn)
+    Case "if"
+      Return "if"
+    Case "select case"
+      Return "swich"
+    Case "then"
+      Return "{"
+    Case "end"
+      Return "}"
+    Case Else
+      Return sIn
+
+  End Select
+
+End
+
+'' Separa la linea de entrada en partes, agrupando lo que este entre comillas
+Public Function Separate(sIn As String) As String[]
+
+  ' el problemas son las cadenas "esta es una cadena" por ello no funciona Split, ejemplo
+  ' "If ("cadena con espacios") & "cadea" = "otra cadenas" And ((45 = 3) Or 65) Then"
+
+  Dim sPartes As String[], s, s2 As String
+
+  s2 = InputBox("Cadena a separar")
+  sPartes = Split(s2, " ", Chr(34), True, True)
+  For Each s As String In sPartes
+    Print s
+  Next
+
+End
+
+Public Sub Convert()
+
+  Dim sVala, sGB As String
+  Dim sGambas As String[]
+
+  Dim sPartes As String[], s, s2 As String
+
+  FMain.txtValaCode.Clear
+  sGambas = Split(FMain.txtGambasCode.Text, gb.Cr & gb.CrLf)
+
+  For Each s In sGambas
+    FMain.txtValaCode.Text &= ConvertLine(s) & gb.Lf
+
+  Next
+
+End

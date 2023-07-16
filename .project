@@ -1,7 +1,11 @@
 # Gambas Project File 3.0
+Title=A Gambas to Vala converter
 Startup=FMain
 Version=0.0.1
 Component=gb.image
 Component=gb.gui
 Component=gb.form
+Authors="terco"
+TabSize=2
+Language=es_AR
 Packager=1

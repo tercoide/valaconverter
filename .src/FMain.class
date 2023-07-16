@@ -1,1 +1,11 @@
 ' Gambas class file
+
+Public Sub Button2_Click()
+
+End
+
+Public Sub Button3_Click()
+
+  converter.Convert()
+
+End
