@@ -9,3 +9,9 @@ Public Sub Button3_Click()
   converter.Convert()
 
 End
+
+Public Sub Form_Show()
+
+  converter.Init
+
+End

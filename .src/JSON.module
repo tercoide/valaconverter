@@ -156,7 +156,7 @@ GET_CHAR:
   If $iPos > Len($sStr) Then
     sCar = ""
     Return
-  Endif
+  End If
   sCar = Mid$($sStr, $iPos, 1)
   Inc $iPos
   Return

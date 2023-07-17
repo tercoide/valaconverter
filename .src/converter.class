@@ -1,12 +1,53 @@
 ' Gambas class file
 
 Create Static
+Create Private
 
-Public Function ConvertLine(sLine As String) As String
+Public sGambas As String[]
+Public sPartes As String[]
+Public sLine As String
+Public iIndex As Integer
 
-  Dim sPartes As String[], s, s2 As String
+Public cDictionary As New Collection
+Public SelectOpen As Boolean
+Public ForOpen As Boolean
+Public EndOpen As Boolean
+Public IfOpen As Boolean
 
+Public Sub Init()
+
+  cDictionary = ["if": "if", "then": "{", "print": "stdout.printf", "end": "}", "for": "for", "return": "return"]
+
+End
+
+Public Sub ConvertLine()
+
+  Dim s, s2 As String
+
+  EndOpen = False
+  IfOpen = False
+  ForOpen = False
+  SelectOpen = False
+
+  ' leo una linea
+  ReadLine
+
+  ' la divido
   sPartes = Split(sLine, " ", Chr(34), True, True)
+
+  ' analizo
+  Select Case Lower(sPartes[0])
+    Case "if", "select"
+      ConvertConditional()
+    Case "for", "do", "while"
+      ConvertLoop()
+    Case "public", "private", "function", "sub", "property", "procedure", "dim", "static", "fast"
+      ConvertDeclares()
+    Case Else
+      ConvertSentences()
+
+  End Select
+
   For Each s In sPartes
     s = ConvertBool(s)
     s = ConvertLang(s)
@@ -14,7 +55,77 @@ Public Function ConvertLine(sLine As String) As String
     s2 &= s & " "
   Next
 
-  Return Trim(s2)
+End
+
+'' convierto las estructuras de control condicionales
+Public Sub ConvertConditional()
+
+  Dim sVala, sCondi As String
+  Dim i As Integer
+
+  ' analizo
+  Select Case Lower(sPartes[0])
+    Case "if"
+      sVala &= "if ("
+      Do
+        If sPartes[i] = "then" Then Break
+        Inc i
+        sCondi &= ConvertBool(sPartes[i])
+      Loop
+      sVala &= sCondi & ") "
+      ' ahora puede haber dos casos,
+      ' If condi Then cosas
+      If i = sPartes.Max Then
+        ' no hay mas palabras, es un If con EndIf
+
+      Endif
+
+  End Select
+
+End
+
+'' convierto los loops
+Public Sub ConvertLoop()
+
+  Dim sVala, sCondi As String
+  Dim i As Integer
+
+  ' analizo
+  Select Case Lower(sPartes[0])
+    Case "if"
+      sVala &= "if ("
+      Do
+        If sPartes[i] = "then" Then Break
+        Inc i
+        sCondi &= ConvertBool(sPartes[i])
+      Loop
+      sVala &= sCondi & ") "
+      ' ahora puede haber dos casos,
+      ' If condi Then cosas
+      If i = sPartes.Max Then
+        ' no hay mas palabras, es un If con EndIf
+
+      Endif
+
+  End Select
+
+End
+
+Public Function ConvertSentences(sInstruction As String) As String
+
+  ' esto solo puede ser un llamado a funcion o sub o una asignacion, ejemplos:
+  ' a = CFloat(s$) ^ c
+  ' CallSub(arg1, arg2)
+  ' i = e And d Xor 5
+
+End
+
+Public Function ConvertDeclares(sInstruction As String) As String
+
+  ' esto solo puede ser un llamado a funcion o sub o una asignacion, ejemplos:
+  ' a = CFloat(s$) ^ c
+  ' CallSub(arg1, arg2)
+  ' i = e And d Xor 5
 
 End
 
@@ -39,17 +150,20 @@ Public Function ConvertBool(sIn As String) As String
 
 End
 
-Public Function ConvertLang(sIn As String) As String
+Public Function ConvertLogic(sIn As String) As String
 
   Select Case Lower(sIn)
-    Case "if"
-      Return "if"
-    Case "select case"
-      Return "swich"
-    Case "then"
-      Return "{"
-    Case "end"
-      Return "}"
+    Case "="
+      Return "=="
+    Case "&"
+      Return "&&"
+    Case "or"
+      Return "||"
+    Case "not"
+      Return "!"
+    Case "xor"
+      Return "!="
+
     Case Else
       Return sIn
 
@@ -57,35 +171,69 @@ Public Function ConvertLang(sIn As String) As String
 
 End
 
-'' Separa la linea de entrada en partes, agrupando lo que este entre comillas
-Public Function Separate(sIn As String) As String[]
+Public Function ConvertLang(sIn As String) As String
 
-  ' el problemas son las cadenas "esta es una cadena" por ello no funciona Split, ejemplo
-  ' "If ("cadena con espacios") & "cadea" = "otra cadenas" And ((45 = 3) Or 65) Then"
+  Select Case Lower(sIn)
+    Case "if"
+      If EndOpen Then
+        Return ""
+      Else
+        IfOpen = True
+        Return "if"
 
-  Dim sPartes As String[], s, s2 As String
+      End If
+    Case "select"
+      SelectOpen = True
+      Return "swich"
+    Case "case"
+      If SelectOpen Then
+        Return ""
+      Else
+        Return "case"
+      End If
 
-  s2 = InputBox("Cadena a separar")
-  sPartes = Split(s2, " ", Chr(34), True, True)
-  For Each s As String In sPartes
-    Print s
-  Next
+    Case "then"
+      Return "{"
+    Case "end"
+      EndOpen = True
+      Return "}"
+    Case "end"
+      Return "}"
+
+    Case Else
+      Return sIn
+
+  End Select
 
 End
 
 Public Sub Convert()
 
   Dim sVala, sGB As String
-  Dim sGambas As String[]
 
   Dim sPartes As String[], s, s2 As String
 
   FMain.txtValaCode.Clear
   sGambas = Split(FMain.txtGambasCode.Text, gb.Cr & gb.CrLf)
+  iIndex = 0
 
-  For Each s In sGambas
-    FMain.txtValaCode.Text &= ConvertLine(s) & gb.Lf
+  Do
+    ConvertLine()
 
-  Next
+    If iIndex >= sGambas.Count Then Break
+  Loop
+
+End
+
+Private Sub ReadLine()
+
+  sLine = sGambas[iIndex]
+  Inc iIndex
+
+End
+
+Private Sub WriteLine(sText As String)
+
+  FMain.txtValaCode.Text &= sText & gb.Lf
 
 End
