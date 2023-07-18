@@ -7,6 +7,8 @@ Public sGambas As String[]
 Public sPartes As String[]
 Public sLine As String
 Public iIndex As Integer
+Public iSpaces As Integer
+Public sComments As String
 
 Public cDictionary As New Collection
 Public SelectOpen As Boolean
@@ -34,21 +36,37 @@ Public Sub ConvertLine()
 
   ' la divido
   sPartes = Split(sLine, " ", Chr(34), True, True)
+
   If sPartes.Count = 0 Then                               ' es una linea en blanco
     WriteLine("")
     Return
   Endif
+
+  If Lower(sPartes[0]) = "fast" Then
+    sPartes.Remove(0)
+    sLine = Mid(sLine, 5)
+  End If
   ' analizo
   Select Case Lower(sPartes[0])
     Case "if", "select"
       ConvertConditional()
     Case "for", "do", "while"
       ConvertLoop()
-    Case "public", "private", "function", "sub", "property", "procedure", "dim", "static", "fast"
+    Case "public", "private", "function", "sub", "property", "procedure", "dim", "static"
       ConvertDeclares()
 
     Case "'", "''"
-      WriteLine("// " & Mid(sLine, 2))
+      WriteLine("// " & Mid(sLine, 1))
+
+    Case "else"
+      If sPartes.Count > 1 Then ' puede haber un if
+        If Lower(sPartes[1]) = "if" Then
+
+        Endif
+      Else
+
+        WriteLine("} else {")
+      End If
     Case "end", "endif"
       WriteLine("}")
 
@@ -124,21 +142,182 @@ End
 
 Public Function ConvertSentences(sInstruction As String) As String
 
-  ' esto solo puede ser un llamado a funcion o sub o una asignacion, ejemplos:
-  ' a = CFloat(s$) ^ c
-  ' CallSub(arg1, arg2)
-  ' i = e And d Xor 5
-
   Return sInstruction & ";"
 
 End
 
-Public Function ConvertDeclares() As String
+Public Function FindIndex(sToFind As String) As Integer
 
-  ' esto solo puede ser un llamado a funcion o sub o una asignacion, ejemplos:
-  ' a = CFloat(s$) ^ c
-  ' CallSub(arg1, arg2)
-  ' i = e And d Xor 5
+  Dim i, i2 As Integer, s As String
+
+  ' obtengo el tipo de la declaracion
+  For i = 0 To sPartes.Max
+    s = Lower(sPartes[i])
+    If s = sToFind Then Return i
+  Next
+  Return -1
+
+End
+
+Public Function FindLastIndex(sToFind As String) As Integer
+
+  Dim i, i2 As Integer, s As String
+
+  i2 = -1
+  For i = 0 To sPartes.Max
+    s = Lower(sPartes[i])
+    If s = sToFind Then i2 = i
+
+  Next
+  Return i2
+
+End
+
+Public Function ConvertDeclares() As String  ' convierte
+
+  ' Fast Public Static Sub/Function/Procedure(s1 As Integer, Optional s2 as String[]= ["2","tiuch"], e as float = 3) as Integer    ' esto es una test
+  ' Public a as string = "test"
+
+  Dim s, sType, sDeclare, sArgs, sName As String = "eoo", i, i2, i3 As Integer = 9
+  Dim isProcedure As Boolean
+
+  ' obtengo el tipo de la declaracion
+  i = FindIndex("as")
+  If i >= 0 Then sType = GetType(sPartes[i + 1]) Else sType = "void"
+
+  i = InStr(sLine, "(")
+  i2 = InStr(sLine, "=")
+
+  If i > 0 Then
+    If i2 > 0 Then
+      isProcedure = False
+    Else
+      isProcedure = True
+    End If
+  Else ' no hay ()
+    isProcedure = False
+  Endif
+
+  If isProcedure Then
+    i2 = InStr(sLine, ")", -1000)
+    i3 = InStr(sLine, " ", -i)
+    sArgs = Trim(Mid(sLine, i + 1, i2 - i - 1))
+    If sArgs = "" Then sargs = " void "
+
+    sName = Mid(sLine, i3 + 1, i - i3 - 1)
+
+    ' reconstruyo
+    ' public/private/static
+    sDeclare = ""
+    i = 0
+    Do
+      Select Case Lower(sPartes[i])
+        Case "public", "private", "property", "static"
+
+          sDeclare &= Lower(sPartes[i]) & " "
+        Case "function", "sub", "procedure"
+
+        Case Else
+          Break
+      End Select
+      Inc i
+    Loop
+
+    ' agrego el tipo y el nombre
+    sDeclare &= sType & " " & sName
+
+    ' agrego los argumentos
+
+    sDeclare &= "(" & sArgs & ")"
+
+    WriteLine(sDeclare)
+
+  Else
+    ' es una declaracion de variable, por ej:
+    ' Dim s, sType, sDeclare, sArgs, sName As String = "eoo", i, i2, i3 As Integer = 9
+    ' Public Const e as integer = 4
+    ' puede haber varias delaraciones en una linea lo que dificulta la traduccion
+    Dim sDeclareType, sVarList, sValue As String
+    Dim slxVarList As String[]
+    Select Case sPartes[0]
+      Case "Dim"
+        sDeclareType = ""
+        sline = Mid(sLine, 5)
+      Case "Public"
+        sDeclareType = "public "
+        sline = Mid(sLine, 7)
+      Case "Private"
+        sDeclareType = "private "
+        sline = Mid(sLine, 8)
+      Case "Property"
+        sDeclareType = "property "
+        sline = Mid(sLine, 9)
+
+    End Select
+
+    If sPartes[1] = "Const" Then
+      sDeclareType = "const "
+      sline = Mid(sLine, 13)
+    End If
+
+    ' ya trunque el tipo de declaracion, me queda el resto:
+    ' s, sType, sDeclare, sArgs, sName As String = "errro", i, i2, i3 As Integer = 9
+
+    Do
+
+      i2 = InStr(sLine, " As ")
+      If i2 = 0 Then Break
+      ' y el tipo es:
+      sType = Mid(sline, i2 + 4)
+      sVarList = Left(sline, i2)
+      slxVarList = Split(sVarList, ",")
+
+      If slxVarList.Count = 0 Then
+        slxVarList.Add(sVarList)
+      Endif
+
+      ' veo si es declaracion multiple
+      i3 = InStr(sType, ",")
+      If i3 > 0 Then
+        sline = Mid(sType, i3 + 1)
+        sType = Mid(sType, 1, i3 - 1)
+      Else
+        sline = ""
+      Endif
+
+      ' veo si ya le asgna valor
+      i3 = InStr(sType, "=")
+      If i3 > 0 Then
+        sValue = Mid(sType, i3)
+        sType = Left(sType, i3 - 1)
+      Else
+        sValue = ""
+
+      End If
+      sType = GetType(sType)
+
+      ' ahora puedo armar esta parte
+      For Each sVarList In slxVarList
+        sVarList = " " & Trim(sVarList) & " "
+        WriteLine(sDeclareType & sType & sVarList & sValue & ";")
+      Next
+
+    Loop
+
+  Endif
+
+End
+
+Public Function GetType(gbType As String) As String
+
+  gbType = Trim(Lower(gbType))
+
+  If gbType = "float" Then Return "double"
+  If gbType = "single" Then Return "float"
+  If gbType = "integer" Then Return "integer"
+  If gbType = "string" Then Return "string"
+  If gbType = "boolean" Then Return "bool"
+  If gbType = "long" Then Return "long"
 
 End
 
@@ -152,10 +331,7 @@ Public Function ConvertBool(sIn As String) As String
     Case "or"
       Return "||"
     Case "not"
-      Return "=="
-    Case "xor"
       Return "!="
-
     Case Else
       Return sIn
 
@@ -175,7 +351,7 @@ Public Function ConvertLogic(sIn As String) As String
     Case "not"
       Return "!"
     Case "xor"
-      Return "!="
+      Return "^"
 
     Case Else
       Return sIn
@@ -240,13 +416,75 @@ End
 
 Private Sub ReadLine()
 
+  Dim i As Integer
+
   sLine = sGambas[iIndex]
+  ' cuento los espacios
+  iSpaces = 0
+  For i = 1 To sLine.Len
+    If Mid(sLine, i, 1) = " " Then
+      Inc iSpaces
+    Else
+      Break
+    Endif
+  Next
+  sLine = Trim(sLine)
+
+  ' extraigo los comentarios
+  i = Instr2(sLine, "'", 1)
+  If i > 0 Then
+    sComments = Mid(sLine, i)
+    sComments = " " & Replace(sComments, "'", "//")
+    sLine = Left(sLine, i - 1)
+  Endif
   Inc iIndex
 
 End
 
 Private Sub WriteLine(sText As String)
 
-  FMain.txtValaCode.Text &= sText & gb.Lf
+  FMain.txtValaCode.Text &= String(iSpaces, " ") & sText & sComments & gb.Lf
+  sComments = ""
+  iSpaces = 0
+
+End
+
+'' Igual q Instr pero no busca dentro de comillas
+Public Function Instr2(sFrase As String, sToFind As String, Optional iStart As Integer = 1) As Integer
+
+  Dim i As Integer
+
+  Dim inxQuotes As New Integer[]
+  Dim i2 As Integer
+  Dim iResult As Integer
+
+  For i = 1 To sFrase.Len
+    If Mid(sFrase, i, 1) = Chr(34) Then inxQuotes.Add(i)
+  Next
+
+  i2 = iStart - 1
+  Do
+
+    i2 = InStr(sFrase, sToFind, i2 + 1)
+
+    ' veo si cayo entre comillas
+    ' hola ' comoe " 'digo "  que no y ahora ' si
+    If i2 > 0 Then
+      iResult = i2
+      For i = 0 To inxQuotes.Max - 1 Step 2
+        If i2 >= inxQuotes[i] And i2 <= inxQuotes[i + 1] Then
+          iResult = 0
+        Else
+          iResult = i2
+          Break
+        Endif
+      Next
+
+    Endif
+    If iResult > 0 Then Break
+    If i2 = 0 Then Break
+  Loop
+
+  Return iResult
 
 End
