@@ -14,4 +14,6 @@ Public Sub Form_Show()
 
   converter.Init
 
+  Print converter.Replace2("estoy test probando \"test\" y ahora test", "test", "xxxxxxxxxx")
+
 End

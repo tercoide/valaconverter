@@ -18,7 +18,43 @@ Public IfOpen As Boolean
 
 Public Sub Init()
 
-  cDictionary = ["if": "if", "then": "{", "print": "stdout.printf", "end": "}", "for": "for", "return": "return"]
+  ' armo el diccionario de reemplazos, ojo se consideran mayusculas
+  ' valor = Vala, key = Gambas
+
+  ' tipos
+  cDictionary.Add("double", "Float")
+  cDictionary.Add("integer", "Integer")
+  cDictionary.Add("float", "Single")
+  cDictionary.Add("string", "String")
+
+  ' estructuras de control
+  cDictionary.Add("swich", "Select Case")
+  cDictionary.Add("}", "End If")
+  cDictionary.Add("}", "Endif")
+  cDictionary.Add("}", "Next")
+  cDictionary.Add("}", "End")
+  cDictionary.Add("}", "End Select")
+  cDictionary.Add("}", "Loop")
+  cDictionary.Add("{", "Then")
+  cDictionary.Add("} else {", "Else")
+
+End
+
+Public Sub Convert()
+
+  Dim sVala, sGB As String
+
+  Dim sPartes As String[], s, s2 As String
+
+  FMain.txtValaCode.Clear
+  sGambas = Split(FMain.txtGambasCode.Text, gb.Cr & gb.CrLf)
+  iIndex = 0
+
+  Do
+    ConvertLine()
+
+    If iIndex >= sGambas.Count Then Break
+  Loop
 
 End
 
@@ -55,8 +91,8 @@ Public Sub ConvertLine()
     Case "public", "private", "function", "sub", "property", "procedure", "dim", "static"
       ConvertDeclares()
 
-    Case "'", "''"
-      WriteLine("// " & Mid(sLine, 1))
+      ' Case "'", "''"
+      '   WriteLine("// " & Mid(sLine, 1))
 
     Case "else"
       If sPartes.Count > 1 Then ' puede haber un if
@@ -396,24 +432,6 @@ Public Function ConvertLang(sIn As String) As String
 
 End
 
-Public Sub Convert()
-
-  Dim sVala, sGB As String
-
-  Dim sPartes As String[], s, s2 As String
-
-  FMain.txtValaCode.Clear
-  sGambas = Split(FMain.txtGambasCode.Text, gb.Cr & gb.CrLf)
-  iIndex = 0
-
-  Do
-    ConvertLine()
-
-    If iIndex >= sGambas.Count Then Break
-  Loop
-
-End
-
 Private Sub ReadLine()
 
   Dim i As Integer
@@ -486,5 +504,25 @@ Public Function Instr2(sFrase As String, sToFind As String, Optional iStart As I
   Loop
 
   Return iResult
+
+End
+
+'' Reemplaza solo si no esta entre comillas
+Public Function Replace2(sOrigen As String, sToFind As String, sReemplazo As String) As String
+
+  Dim s As String
+  Dim p As Integer
+
+  p = 1
+  Do
+    p = Instr2(sOrigen, sToFind, p)
+    If p = 0 Then Break
+
+    sOrigen = Left(sOrigen, p - 1) & sReemplazo & Mid(sOrigen, p + Len(sToFind))
+    p += Len(sReemplazo)
+
+  Loop
+
+  Return sOrigen
 
 End
