@@ -30,7 +30,7 @@ Public Sub Init()
   ' estructuras de control
   cDictionary.Add("swich", "Select Case")
   cDictionary.Add("if", "If")
-  cDictionary.Add("}", "End If")
+  cDictionary.Add("for", "For")
   cDictionary.Add("}", "End If")
   cDictionary.Add("}", "Endif")
   cDictionary.Add("}", "Next")
