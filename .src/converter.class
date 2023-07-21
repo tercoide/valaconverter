@@ -29,6 +29,8 @@ Public Sub Init()
 
   ' estructuras de control
   cDictionary.Add("swich", "Select Case")
+  cDictionary.Add("if", "If")
+  cDictionary.Add("}", "End If")
   cDictionary.Add("}", "End If")
   cDictionary.Add("}", "Endif")
   cDictionary.Add("}", "Next")
@@ -69,6 +71,9 @@ Public Sub ConvertLine()
 
   ' leo una linea
   ReadLine
+
+  WriteLine(ConvertLang(sline))
+  Return
 
   ' la divido
   sPartes = Split(sLine, " ", Chr(34), True, True)
@@ -398,37 +403,18 @@ End
 
 Public Function ConvertLang(sIn As String) As String
 
-  Select Case Lower(sIn)
-    Case "if"
-      If EndOpen Then
-        Return ""
-      Else
-        IfOpen = True
-        Return "if"
+  Dim s, sOut As String
+  ' la divido
+  sPartes = Split(sLine, " ", Chr(34), True, True)
 
-      End If
-    Case "select"
-      SelectOpen = True
-      Return "swich"
-    Case "case"
-      If SelectOpen Then
-        Return ""
-      Else
-        Return "case"
-      End If
+  For Each s In sPartes
+    If Left(s, 1) = "\"" Then Continue          'ignoro todo lo que sea una cadena
+    For Each s In cDictionary
+      sLine = Replace2(sLine, cDictionary.Key, s)
+    Next
 
-    Case "then"
-      Return "{"
-    Case "end"
-      EndOpen = True
-      Return "}"
-    Case "end"
-      Return "}"
-
-    Case Else
-      Return sIn
-
-  End Select
+  Next
+  Return sLine
 
 End
 
