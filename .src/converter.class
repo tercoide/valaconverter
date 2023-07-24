@@ -29,16 +29,27 @@ Public Sub Init()
 
   ' estructuras de control
   cDictionary.Add("swich", "Select Case")
-  cDictionary.Add("if", "If")
+
+  cDictionary.Add("foreach", "For Each")
   cDictionary.Add("for", "For")
+  cDictionary.Add("in", "In")
   cDictionary.Add("}", "End If")
   cDictionary.Add("}", "Endif")
+  cDictionary.Add("if", "If")
+  cDictionary.Add("}", "End Select")
   cDictionary.Add("}", "Next")
   cDictionary.Add("}", "End")
-  cDictionary.Add("}", "End Select")
   cDictionary.Add("}", "Loop")
   cDictionary.Add("{", "Then")
   cDictionary.Add("} else {", "Else")
+
+  ' declaraciones
+  cDictionary.Add("", "Fast")
+  cDictionary.Add("<type>", "Function")
+  cDictionary.Add("void", "Sub")
+  cDictionary.Add("", "Procedure")
+  cDictionary.Add("static public", "Static Public")
+  cDictionary.Add("public", "Public")
 
 End
 
@@ -63,6 +74,7 @@ End
 Public Sub ConvertLine()
 
   Dim s, s2 As String
+  Dim p As Integer
 
   EndOpen = False
   IfOpen = False
@@ -72,7 +84,15 @@ Public Sub ConvertLine()
   ' leo una linea
   ReadLine
 
+  ' extraigo comentarios finales
+  p = Instr2(sLine, "'", 1)
+  If p > 0 Then
+    sComments = Mid(sLine, p)
+    sLine = Trim(Left(sLine, p - 1))
+  Endif
+
   WriteLine(ConvertLang(sline))
+
   Return
 
   ' la divido
