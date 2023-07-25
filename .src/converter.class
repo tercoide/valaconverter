@@ -91,7 +91,25 @@ Public Sub ConvertLine()
     sLine = Trim(Left(sLine, p - 1))
   Endif
 
-  WriteLine(ConvertLang(sline))
+  ' extraigo cosas que no sirven
+  sLine = Replace2(sLine, "Fast ", "")
+
+  ' chequeo que haya quedado codigo
+  If SLine = "" Then
+    WriteLine("")
+    Return
+  End If
+  ' separo las palabras
+  sPartes = Split(sLine, " ", Chr(34), True, True)
+  If sPartes.Count = 0 Then Return
+  Select Case Lower(sPartes[0])
+
+    Case "public", "private", "function", "sub", "property", "procedure", "dim", "static"
+      ConvertDeclares()
+    Case Else
+      WriteLine(ConvertLang(sline))
+
+  End Select
 
   Return
 
@@ -103,10 +121,10 @@ Public Sub ConvertLine()
     Return
   Endif
 
-  If Lower(sPartes[0]) = "fast" Then
-    sPartes.Remove(0)
-    sLine = Mid(sLine, 5)
-  End If
+  ' If Lower(sPartes[0]) = "fast" Then
+  '   sPartes.Remove(0)
+  '   sLine = Mid(sLine, 5)
+  ' End If
   ' analizo
   Select Case Lower(sPartes[0])
     Case "if", "select"
@@ -425,7 +443,7 @@ Public Function ConvertLang(sIn As String) As String
 
   Dim s, sOut As String
   ' la divido
-  sPartes = Split(sLine, " ", Chr(34), True, True)
+  sPartes = Split(sIn, " ", Chr(34), True, True)
 
   For Each s In sPartes
     If Left(s, 1) = "\"" Then Continue          'ignoro todo lo que sea una cadena
@@ -434,7 +452,7 @@ Public Function ConvertLang(sIn As String) As String
     Next
 
   Next
-  Return sLine
+  Return Trim(sLine)
 
 End
 
@@ -514,15 +532,35 @@ Public Function Instr2(sFrase As String, sToFind As String, Optional iStart As I
 End
 
 '' Reemplaza solo si no esta entre comillas
-Public Function Replace2(sOrigen As String, sToFind As String, sReemplazo As String) As String
+Public Function Replace2(sOrigen As String, sToFind As String, sReemplazo As String, Optional SoloPalabrasEnteras As Boolean = True) As String
 
   Dim s As String
   Dim p As Integer
+  Dim OkInicio As Boolean
 
   p = 1
   Do
     p = Instr2(sOrigen, sToFind, p)
     If p = 0 Then Break
+
+    If SoloPalabrasEnteras Then
+      OkInicio = False
+      If p = 1 Then
+        OkInicio = True
+      Else
+        If Mid(sOrigen, p - 1, 1) <> " " Then OkInicio = False Else OkInicio = True
+      End If
+      If p + Len(sToFind) < Len(sOrigen) Then
+        If Mid(sOrigen, p + Len(sToFind), 1) <> " " Then OkInicio = False Else OkInicio = True
+      Else
+        OkInicio = True
+      Endif
+      If Not OkInicio Then
+        p += Len(sToFind)
+
+        Continue
+      End If
+    Endif
 
     sOrigen = Left(sOrigen, p - 1) & sReemplazo & Mid(sOrigen, p + Len(sToFind))
     p += Len(sReemplazo)
