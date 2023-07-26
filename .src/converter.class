@@ -28,24 +28,25 @@ Public Sub Init()
   cDictionary.Add("string", "String")
 
   ' estructuras de control
-  cDictionary.Add("swich", "Select Case")
-
-  cDictionary.Add("foreach", "For Each")
-  cDictionary.Add("for", "For")
+  cDictionary.Add("swich (", "Select Case") 'requiere un ) final
+  cDictionary.Add("foreach (", "For Each")  'requiere un ) final
+  cDictionary.Add("for (", "For")           'requiere un ) final
   cDictionary.Add("in", "In")
   cDictionary.Add("}", "End If")
   cDictionary.Add("}", "Endif")
-  cDictionary.Add("if", "If")
+  cDictionary.Add("if (", "If")             'requiere un ) final
   cDictionary.Add("}", "End Select")
   cDictionary.Add("}", "Next")
   cDictionary.Add("}", "End")
+  cDictionary.Add("while (", "Do While")    'requiere un ) final
+  cDictionary.Add("do {", "Do")
   cDictionary.Add("}", "Loop")
-  cDictionary.Add("{", "Then")
+  cDictionary.Add(") @", "Then")
   cDictionary.Add("} else {", "Else")
 
   ' declaraciones
   cDictionary.Add("", "Fast")
-  cDictionary.Add("<type>", "Function")
+  cDictionary.Add("@", "Function")
   cDictionary.Add("void", "Sub")
   cDictionary.Add("", "Procedure")
   cDictionary.Add("static public", "Static Public")
@@ -111,48 +112,8 @@ Public Sub ConvertLine()
 
   End Select
 
+  ' post procesado
   Return
-
-  ' la divido
-  sPartes = Split(sLine, " ", Chr(34), True, True)
-
-  If sPartes.Count = 0 Then                               ' es una linea en blanco
-    WriteLine("")
-    Return
-  Endif
-
-  ' If Lower(sPartes[0]) = "fast" Then
-  '   sPartes.Remove(0)
-  '   sLine = Mid(sLine, 5)
-  ' End If
-  ' analizo
-  Select Case Lower(sPartes[0])
-    Case "if", "select"
-      ConvertConditional()
-    Case "for", "do", "while"
-      ConvertLoop()
-    Case "public", "private", "function", "sub", "property", "procedure", "dim", "static"
-      ConvertDeclares()
-
-      ' Case "'", "''"
-      '   WriteLine("// " & Mid(sLine, 1))
-
-    Case "else"
-      If sPartes.Count > 1 Then ' puede haber un if
-        If Lower(sPartes[1]) = "if" Then
-
-        Endif
-      Else
-
-        WriteLine("} else {")
-      End If
-    Case "end", "endif"
-      WriteLine("}")
-
-    Case Else
-      WriteLine(ConvertSentences(sLine))
-
-  End Select
 
 End
 
@@ -169,7 +130,7 @@ Public Sub ConvertConditional()
       Do
 
         Inc i
-        If Lower(sPartes[i]) = "then" Then Break
+        If sPartes[i] = "@" Then Break
         sCondi &= ConvertBool(sPartes[i])
       Loop
       sVala &= sCondi & ") "
@@ -183,11 +144,8 @@ Public Sub ConvertConditional()
 
       Else
         ' rearmo la sentencia
-        Do
 
-          Inc i
-          sSentencia &= sPartes[i]
-        Loop Until i = sPartes.Max
+        sSentencia &= sPartes[i]
 
         sVala &= ConvertSentences(sSentencia)
       Endif
@@ -201,21 +159,6 @@ Public Sub ConvertLoop()
 
   Dim sVala, sCondi, sSentencia As String
   Dim i As Integer
-
-  ' analizo
-  Select Case Lower(sPartes[0])
-    Case "if"
-      sVala &= "if ("
-      Do
-        If sPartes[i] = "then" Then Break
-        Inc i
-        sCondi &= ConvertBool(sPartes[i])
-      Loop
-      sVala &= sCondi & ") "
-      ' ahora puede haber dos casos,
-      ' If condi Then cosas
-
-  End Select
 
 End
 
@@ -452,7 +395,50 @@ Public Function ConvertLang(sIn As String) As String
     Next
 
   Next
-  Return Trim(sLine)
+
+  sLine = Trim(sLine)
+
+  Return sLine
+
+  ' post procesado
+  ' la divido
+  sPartes = Split(sLine, " ", Chr(34), True, True)
+
+  If sPartes.Count = 0 Then                               ' es una linea en blanco
+    WriteLine("")
+    Return
+  Endif
+
+  ' analizo
+  Select Case Lower(sPartes[0])
+    Case "if"       ' if (condition) @
+      ConvertConditional()
+    Case "for", "do", "while"
+      ConvertLoop()
+    Case "public", "private", "function", "sub", "property", "procedure", "dim", "static"
+      ConvertDeclares()
+
+      ' Case "'", "''"
+      '   WriteLine("// " & Mid(sLine, 1))
+
+    Case "else"
+      If sPartes.Count > 1 Then ' puede haber un if
+        If Lower(sPartes[1]) = "if" Then
+
+        Endif
+      Else
+
+        WriteLine("} else {")
+      End If
+    Case "end", "endif"
+      WriteLine("}")
+
+    Case Else
+      WriteLine(ConvertSentences(sLine))
+
+  End Select
+
+  Return sLine
 
 End
 
