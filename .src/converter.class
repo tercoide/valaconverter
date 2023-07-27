@@ -42,7 +42,9 @@ Public Sub Init()
   cDictionary.Add("do {", "Do")
   cDictionary.Add("}", "Loop")
   cDictionary.Add(") @", "Then")
+  cDictionary.Add("default", "Case Else")
   cDictionary.Add("} else {", "Else")
+  cDictionary.Add("case", "Case")
 
   ' declaraciones
   cDictionary.Add("", "Fast")
@@ -50,6 +52,13 @@ Public Sub Init()
   cDictionary.Add("void", "Sub")
   cDictionary.Add("", "Procedure")
   cDictionary.Add("static public", "Static Public")
+  cDictionary.Add("public", "Public")
+
+  ' sentencias
+  cDictionary.Add("return", "Return")
+  cDictionary.Add("public", "Public")
+  cDictionary.Add("public", "Public")
+  cDictionary.Add("public", "Public")
   cDictionary.Add("public", "Public")
 
 End
@@ -108,7 +117,7 @@ Public Sub ConvertLine()
     Case "public", "private", "function", "sub", "property", "procedure", "dim", "static"
       ConvertDeclares()
     Case Else
-      WriteLine(ConvertLang(sline))
+      ConvertLang()
 
   End Select
 
@@ -121,36 +130,17 @@ End
 Public Sub ConvertConditional()
 
   Dim sVala, sCondi, sSentencia As String
+  Dim p As Integer
+
   Dim i As Integer
 
-  ' analizo
-  Select Case Lower(sPartes[0])
-    Case "if"
-      sVala &= "if ("
-      Do
+  p = Instr2(sline, "@")
 
-        Inc i
-        If sPartes[i] = "@" Then Break
-        sCondi &= ConvertBool(sPartes[i])
-      Loop
-      sVala &= sCondi & ") "
-      ' ahora puede haber dos casos,
-      ' If condi Then cosas
-      If i = sPartes.Max Then
-        ' no hay mas palabras, es un If con EndIf
-        sVala &= "{"
-        WriteLine(sVala)
-        ConvertLine()
-
-      Else
-        ' rearmo la sentencia
-
-        sSentencia &= sPartes[i]
-
-        sVala &= ConvertSentences(sSentencia)
-      Endif
-
-  End Select
+  If Right(sline, 1) = "@" Then    ' es un If de varias lineas
+    sline = Left(sLine, Len(sline) - 1) & "{"
+  Else
+    sLine = Left(sLine, p - 1) & ConvertSentences(Mid(sline, p + 1))
+  End If
 
 End
 
@@ -164,6 +154,8 @@ End
 
 Public Function ConvertSentences(sInstruction As String) As String
 
+  If Right(sInstruction, 1) = "{" Then Return sInstruction
+  If Right(sInstruction, 1) = "}" Then Return sInstruction
   Return sInstruction & ";"
 
 End
@@ -382,11 +374,11 @@ Public Function ConvertLogic(sIn As String) As String
 
 End
 
-Public Function ConvertLang(sIn As String) As String
+Public Sub ConvertLang()
 
   Dim s, sOut As String
   ' la divido
-  sPartes = Split(sIn, " ", Chr(34), True, True)
+  sPartes = Split(sLine, " ", Chr(34), True, True)
 
   For Each s In sPartes
     If Left(s, 1) = "\"" Then Continue          'ignoro todo lo que sea una cadena
@@ -398,7 +390,7 @@ Public Function ConvertLang(sIn As String) As String
 
   sLine = Trim(sLine)
 
-  Return sLine
+  'Return sLine
 
   ' post procesado
   ' la divido
@@ -413,32 +405,35 @@ Public Function ConvertLang(sIn As String) As String
   Select Case Lower(sPartes[0])
     Case "if"       ' if (condition) @
       ConvertConditional()
-    Case "for", "do", "while"
-      ConvertLoop()
-    Case "public", "private", "function", "sub", "property", "procedure", "dim", "static"
-      ConvertDeclares()
-
-      ' Case "'", "''"
-      '   WriteLine("// " & Mid(sLine, 1))
-
-    Case "else"
-      If sPartes.Count > 1 Then ' puede haber un if
-        If Lower(sPartes[1]) = "if" Then
-
-        Endif
-      Else
-
-        WriteLine("} else {")
-      End If
-    Case "end", "endif"
-      WriteLine("}")
+    Case "case", "default"
+      sLine &= ":"
+    Case "for", "foreach", "swich"
+      sLine &= ") {"
+      '   ConvertLoop()
+      ' Case "public", "private", "function", "sub", "property", "procedure", "dim", "static"
+      '   ConvertDeclares()
+      '
+      '   ' Case "'", "''"
+      '   '   WriteLine("// " & Mid(sLine, 1))
+      '
+      ' Case "else"
+      '   If sPartes.Count > 1 Then ' puede haber un if
+      '     If Lower(sPartes[1]) = "if" Then
+      '
+      '     Endif
+      '   Else
+      '
+      '     WriteLine("} else {")
+      '   End If
+      ' Case "end", "endif"
+      '   WriteLine("}")
 
     Case Else
-      WriteLine(ConvertSentences(sLine))
+      sLine = ConvertSentences(sLine)
 
   End Select
 
-  Return sLine
+  WriteLine(sLine)
 
 End
 
