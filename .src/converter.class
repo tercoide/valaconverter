@@ -196,14 +196,15 @@ Public Function ConvertDeclares() As String  ' convierte
   Dim isProcedure As Boolean
 
   ' obtengo el tipo de la declaracion
-  i = FindIndex("as")
-  If i >= 0 Then sType = GetType(sPartes[i + 1]) Else sType = "void"
+  i = InStr(sLine, ")", -1000)
+  Try sType = Mid(SLine, i + 4)
+  If sType <> "" Then sType = GetType(sType) Else sType = "void"
 
   i = InStr(sLine, "(")
   i2 = InStr(sLine, "=")
 
   If i > 0 Then
-    If i2 > 0 Then
+    If i2 < i Then
       isProcedure = False
     Else
       isProcedure = True
@@ -214,7 +215,7 @@ Public Function ConvertDeclares() As String  ' convierte
 
   If isProcedure Then
     i2 = InStr(sLine, ")", -1000)
-    i3 = InStr(sLine, " ", -i)
+    i3 = InstrReverse(sLine, " ", i)
     sArgs = Trim(Mid(sLine, i + 1, i2 - i - 1))
     If sArgs = "" Then sargs = " void "
 
@@ -239,10 +240,9 @@ Public Function ConvertDeclares() As String  ' convierte
 
     ' agrego el tipo y el nombre
     sDeclare &= sType & " " & sName
-
+    sArgs = ConvertArgs(sArgs)
     ' agrego los argumentos
-
-    sDeclare &= "(" & sArgs & ")"
+    sDeclare &= "(" & sArgs & ") {"
 
     WriteLine(sDeclare)
 
@@ -311,14 +311,40 @@ Public Function ConvertDeclares() As String  ' convierte
       sType = GetType(sType)
 
       ' ahora puedo armar esta parte
-      For Each sVarList In slxVarList
+      For i = 0 To slxVarList.Max
+        sVarList = slxVarList[i]
         sVarList = " " & Trim(sVarList) & " "
-        WriteLine(sDeclareType & sType & sVarList & sValue & ";")
+        WriteLine(sDeclareType & sType & sVarList & sValue & ";", IIf(i <= slxVarList.Max, True, False))
       Next
 
     Loop
 
   Endif
+
+End
+
+'' Convierte: i As Integer, e3 as Float, slxBase as String[]  -> integer i, double e3, string[] slxbase
+Public Function ConvertArgs(sArguments As String) As String
+
+  Dim slxArg As String[]
+  Dim sArg As String
+  Dim i As Integer
+  Dim sVar As String
+  Dim sType, sResult As String
+
+  slxArg = Split(sArguments, ",")
+
+  For Each sArg In slxArg
+    i = InStr(sArg, " As ")
+    sVar = Left(sArg, i - 1)
+    sType = Mid(sArg, i + 4)
+    sType = GetType(sType)
+    sResult &= sType & " " & sVar & ", "
+  Next
+  If Right(sResult, 2) = ", " Then
+    sResult = Left(sResult, -2)
+  Endif
+  Return sResult
 
 End
 
@@ -464,11 +490,29 @@ Private Sub ReadLine()
 
 End
 
-Private Sub WriteLine(sText As String)
+Private Sub WriteLine(sText As String, Optional KeepSpaces As Boolean = False)
 
   FMain.txtValaCode.Text &= String(iSpaces, " ") & sText & sComments & gb.Lf
   sComments = ""
-  iSpaces = 0
+  If Not KeepSpaces Then iSpaces = 0
+
+End
+
+'' Igual que Instr pero busca desde iStat hacia atras
+Public Function InstrReverse(sFrase As String, sToFind As String, iStart As Integer) As Integer
+
+  Dim i As Integer
+  Dim sFrase2, sToFind2 As String
+
+  For i = Len(sFrase) To 1 Step -1
+    sFrase2 &= Mid(sFrase, i, 1)
+  Next
+
+  For i = Len(sToFind) To 1 Step -1
+    sToFind2 &= Mid(sToFind, i, 1)
+  Next
+
+  Return Len(sFrase2) - InStr(sFrase2, sToFind2, Len(sFrase2) - iStart + 1) + 1
 
 End
 

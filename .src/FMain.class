@@ -18,4 +18,6 @@ Public Sub Form_Show()
 
   Print converter.Replace2("test", "test", "xxxxxxxxxx")
 
+  Print converter.InstrReverse("Public mamamama(test )", " ", 10)
+
 End
