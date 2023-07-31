@@ -11,6 +11,8 @@ Public iSpaces As Integer
 Public sComments As String
 
 Public cDictionary As New Collection
+
+Public cFunctions As New Collection   ' acumulo las funciones que voy encontrando
 Public SelectOpen As Boolean
 Public ForOpen As Boolean
 Public EndOpen As Boolean
@@ -53,6 +55,7 @@ Public Sub Init()
   cDictionary.Add("", "Procedure")
   cDictionary.Add("static public", "Static Public")
   cDictionary.Add("public", "Public")
+  cDictionary.Add("", "Optional")
 
   ' sentencias
   cDictionary.Add("return", "Return")
@@ -60,6 +63,12 @@ Public Sub Init()
   cDictionary.Add("public", "Public")
   cDictionary.Add("public", "Public")
   cDictionary.Add("public", "Public")
+
+  ' Math
+  cDictionary.Add("Math.sin", "Sin")
+  cDictionary.Add("Math.cos", "Cos")
+  cDictionary.Add("Math.tan", "Tan")
+  cDictionary.Add("Math.PI", "Pi")
 
 End
 
@@ -85,11 +94,13 @@ Public Sub ConvertLine()
 
   Dim s, s2 As String
   Dim p As Integer
+  Dim f As Float
 
   EndOpen = False
   IfOpen = False
   ForOpen = False
   SelectOpen = False
+  f = 5 + Cos(Pi)
 
   ' leo una linea
   ReadLine
@@ -204,7 +215,7 @@ Public Function ConvertDeclares() As String  ' convierte
   i2 = InStr(sLine, "=")
 
   If i > 0 Then
-    If i2 < i Then
+    If (i2 > 0) And (i2 < i) Then
       isProcedure = False
     Else
       isProcedure = True
@@ -328,18 +339,28 @@ Public Function ConvertArgs(sArguments As String) As String
 
   Dim slxArg As String[]
   Dim sArg As String
-  Dim i As Integer
+  Dim i, pEqual As Integer
   Dim sVar As String
-  Dim sType, sResult As String
+  Dim sType, sResult, sValue As String
+
+  sArguments = Replace2(sArguments, "Optional", "")
 
   slxArg = Split(sArguments, ",")
 
   For Each sArg In slxArg
     i = InStr(sArg, " As ")
-    sVar = Left(sArg, i - 1)
+    sVar = Trim(Left(sArg, i - 1))
     sType = Mid(sArg, i + 4)
-    sType = GetType(sType)
-    sResult &= sType & " " & sVar & ", "
+
+    pEqual = Instr2(sType, "=")
+    If pEqual > 0 Then ' es un Optional
+      sValue = Trim(Mid(sType, pEqual))
+      sType = Left(sType, pEqual - 1)
+    Else
+      sValue = ""
+    End If
+    sType = Trim(GetType(sType))
+    sResult &= sType & " " & sVar & sValue & ", "
   Next
   If Right(sResult, 2) = ", " Then
     sResult = Left(sResult, -2)
@@ -350,14 +371,21 @@ End
 
 Public Function GetType(gbType As String) As String
 
-  gbType = Trim(Lower(gbType))
+  Dim sBrackets As String
 
-  If gbType = "float" Then Return "double"
-  If gbType = "single" Then Return "float"
-  If gbType = "integer" Then Return "integer"
-  If gbType = "string" Then Return "string"
-  If gbType = "boolean" Then Return "bool"
-  If gbType = "long" Then Return "long"
+  gbType = Trim(Lower(gbType))
+  sBrackets = Right(gbType, 2)
+  If sBrackets <> "[]" Then
+    sBrackets = ""
+  Else
+    gbType = Left(gbType, -2)
+  End If
+  If gbType = "float" Then Return "double" & sBrackets
+  If gbType = "single" Then Return "float" & sBrackets
+  If gbType = "integer" Then Return "integer" & sBrackets
+  If gbType = "string" Then Return "string" & sBrackets
+  If gbType = "boolean" Then Return "bool" & sBrackets
+  If gbType = "long" Then Return "long" & sBrackets
 
 End
 
@@ -404,11 +432,12 @@ Public Sub ConvertLang()
 
   Dim s, sOut As String
   ' la divido
-  sPartes = Split(sLine, " ", Chr(34), True, True)
+  sPartes = Split(sLine, " ()", Chr(34), True, True)
 
   For Each s In sPartes
     If Left(s, 1) = "\"" Then Continue          'ignoro todo lo que sea una cadena
     For Each s In cDictionary
+      'If cDictionary.Key = "Cos" Then Stop
       sLine = Replace2(sLine, cDictionary.Key, s)
     Next
 
@@ -573,10 +602,10 @@ Public Function Replace2(sOrigen As String, sToFind As String, sReemplazo As Str
       If p = 1 Then
         OkInicio = True
       Else
-        If Mid(sOrigen, p - 1, 1) <> " " Then OkInicio = False Else OkInicio = True
+        If (Mid(sOrigen, p - 1, 1) <> " ") And (Mid(sOrigen, p - 1, 1) <> "(") Then OkInicio = False Else OkInicio = True
       End If
       If p + Len(sToFind) < Len(sOrigen) Then
-        If Mid(sOrigen, p + Len(sToFind), 1) <> " " Then OkInicio = False Else OkInicio = True
+        If (Mid(sOrigen, p + Len(sToFind), 1) <> " ") And (Mid(sOrigen, p + Len(sToFind), 1) <> "(") And (Mid(sOrigen, p + Len(sToFind), 1) <> ")") Then OkInicio = False Else OkInicio = True
       Else
         OkInicio = True
       Endif
