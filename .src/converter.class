@@ -431,6 +431,9 @@ End
 Public Sub ConvertLang()
 
   Dim s, sOut As String
+  Dim p, p1, p2, p3 As Integer
+  Dim sVarName, sCondition, sChange As String
+
   ' la divido
   sPartes = Split(sLine, " ()", Chr(34), True, True)
 
@@ -462,8 +465,11 @@ Public Sub ConvertLang()
       ConvertConditional()
     Case "case", "default"
       sLine &= ":"
-    Case "for", "foreach", "swich"
+    Case "foreach", "swich"
       sLine &= ") {"
+      
+    Case "for"
+      
       '   ConvertLoop()
       ' Case "public", "private", "function", "sub", "property", "procedure", "dim", "static"
       '   ConvertDeclares()
@@ -485,6 +491,32 @@ Public Sub ConvertLang()
 
     Case Else
       sLine = ConvertSentences(sLine)
+
+  End Select
+
+  ' post process 1
+  ' la divido
+  sPartes = Split(sLine, " ", Chr(34), True, True)
+
+  ' analizo
+  Select Case Lower(sPartes[0])
+
+    Case "for"  ' for (i=0 to max step some)
+      p1 = Instr2(sLine, "=")
+      p = Instr2(sLine, "(")
+      p2 = Instr2(sLine, " Step ")
+      p3 = Instr2(sLine, " To ")
+
+      sVarName = Trim(Mid(sline, p + 1, p1 - p - 1))
+      If p2 > 0 Then
+        sChange = sVarName & " + " & Mid(SLine, p2 + 6)
+        sCondition = sVarName & " <= " & Mid(sLine, p3 + 4, p2 - p3 - 4)
+      Else
+        sChange = sVarName & " + 1"
+        sCondition = sVarName & " <= " & Mid(sLine, p3 + 4)
+      End If
+
+      sLine = Mid(sLine, 1, p3 - 1) & "; " & sCondition & "; " & sChange & ") {"
 
   End Select
 

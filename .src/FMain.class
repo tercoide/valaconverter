@@ -14,10 +14,10 @@ Public Sub Form_Show()
 
   converter.Init
 
-  Print converter.Replace2("test (test) estoy testX test probando \"test\" y ahora test", "test", "xxxxxxxxxx")
-
-  Print converter.Replace2("test", "test", "xxxxxxxxxx")
-
-  Print converter.InstrReverse("Public mamamama(test )", " ", 10)
+  ' Print converter.Replace2("test (test) estoy testX test probando \"test\" y ahora test", "test", "xxxxxxxxxx")
+  '
+  ' Print converter.Replace2("test", "test", "xxxxxxxxxx")
+  '
+  ' Print converter.InstrReverse("Public mamamama(test )", " ", 10)
 
 End
