@@ -11,6 +11,7 @@ Public iSpaces As Integer
 Public sComments As String
 
 Public cDictionary As New Collection
+Public cDictBool As New Collection
 
 Public cFunctions As New Collection   ' acumulo las funciones que voy encontrando
 Public SelectOpen As Boolean
@@ -22,6 +23,12 @@ Public Sub Init()
 
   ' armo el diccionario de reemplazos, ojo se consideran mayusculas
   ' valor = Vala, key = Gambas
+
+  ' BOOL
+  cDictBool.Add("==", "=")
+  cDictBool.Add("&&", "And")
+  cDictBool.Add("!=", "Not")
+  cDictBool.Add("||", "Or")
 
   ' tipos
   cDictionary.Add("double", "Float")
@@ -140,18 +147,27 @@ End
 '' convierto las estructuras de control condicionales
 Public Sub ConvertConditional()
 
-  Dim sVala, sCondi, sSentencia As String
-  Dim p As Integer
+  Dim sVala, sCondi, sCondition, sSentencia As String
+  Dim p, p1, p2, p3 As Integer
 
   Dim i As Integer
 
   p = Instr2(sline, "@")
+  p1 = Instr2(sline, "(")
+
+  sCondition = Mid(sLine, p1, p - p1 - 1)
+  For Each sCondi In cDictBool
+    'If cDictionary.Key = "Cos" Then Stop
+    sCondition = Replace2(sCondition, cDictBool.Key, sCondi)
+  Next
 
   If Right(sline, 1) = "@" Then    ' es un If de varias lineas
-    sline = Left(sLine, Len(sline) - 1) & "{"
+    sSentencia = "{"
   Else
-    sLine = Left(sLine, p - 1) & ConvertSentences(Mid(sline, p + 1))
+    sSentencia = ConvertSentences(Mid(sline, p + 1))
   End If
+
+  sLine = "if " & sCondition & sSentencia
 
 End
 
@@ -437,14 +453,14 @@ Public Sub ConvertLang()
   ' la divido
   sPartes = Split(sLine, " ()", Chr(34), True, True)
 
-  For Each s In sPartes
-    If Left(s, 1) = "\"" Then Continue          'ignoro todo lo que sea una cadena
-    For Each s In cDictionary
-      'If cDictionary.Key = "Cos" Then Stop
-      sLine = Replace2(sLine, cDictionary.Key, s)
-    Next
-
+  'For Each s In sPartes
+  'If Left(s, 1) = "\"" Then Continue          'ignoro todo lo que sea una cadena
+  For Each s In cDictionary
+    'If cDictionary.Key = "Cos" Then Stop
+    sLine = Replace2(sLine, cDictionary.Key, s)
   Next
+
+  'Next
 
   sLine = Trim(sLine)
 
@@ -467,9 +483,9 @@ Public Sub ConvertLang()
       sLine &= ":"
     Case "foreach", "swich"
       sLine &= ") {"
-      
+
     Case "for"
-      
+
       '   ConvertLoop()
       ' Case "public", "private", "function", "sub", "property", "procedure", "dim", "static"
       '   ConvertDeclares()
@@ -494,7 +510,7 @@ Public Sub ConvertLang()
 
   End Select
 
-  ' post process 1
+  ' ==================POST PROCESS 1======================================================
   ' la divido
   sPartes = Split(sLine, " ", Chr(34), True, True)
 
@@ -517,6 +533,8 @@ Public Sub ConvertLang()
       End If
 
       sLine = Mid(sLine, 1, p3 - 1) & "; " & sCondition & "; " & sChange & ") {"
+
+    Case "if"
 
   End Select
 
