@@ -27,8 +27,9 @@ Public Sub Init()
   ' BOOL
   cDictBool.Add("==", "=")
   cDictBool.Add("&&", "And")
-  cDictBool.Add("!=", "Not")
+  cDictBool.Add("!=", "<>")
   cDictBool.Add("||", "Or")
+  cDictBool.Add("!", "Not")
 
   ' tipos
   cDictionary.Add("double", "Float")
@@ -387,21 +388,23 @@ End
 
 Public Function GetType(gbType As String) As String
 
-  Dim sBrackets As String
+  Dim sBrackets, valaType As String
 
-  gbType = Trim(Lower(gbType))
-  sBrackets = Right(gbType, 2)
+  valaType = Trim(Lower(gbType))
+  sBrackets = Right(valaType, 2)
   If sBrackets <> "[]" Then
     sBrackets = ""
   Else
-    gbType = Left(gbType, -2)
+    valaType = Left(valaType, -2)
   End If
-  If gbType = "float" Then Return "double" & sBrackets
-  If gbType = "single" Then Return "float" & sBrackets
-  If gbType = "integer" Then Return "integer" & sBrackets
-  If gbType = "string" Then Return "string" & sBrackets
-  If gbType = "boolean" Then Return "bool" & sBrackets
-  If gbType = "long" Then Return "long" & sBrackets
+  If valaType = "float" Then Return "double" & sBrackets
+  If valaType = "single" Then Return "float" & sBrackets
+  If valaType = "integer" Then Return "integer" & sBrackets
+  If valaType = "string" Then Return "string" & sBrackets
+  If valaType = "boolean" Then Return "bool" & sBrackets
+  If valaType = "long" Then Return "long" & sBrackets
+
+  Return gbType
 
 End
 
