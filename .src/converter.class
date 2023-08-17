@@ -44,6 +44,7 @@ Public Sub Init()
   cDictionary.Add("in", "In")
   cDictionary.Add("}", "End If")
   cDictionary.Add("}", "Endif")
+  cDictionary.Add("} else if (", "Else If")
   cDictionary.Add("if (", "If")             'requiere un ) final
   cDictionary.Add("}", "End Select")
   cDictionary.Add("}", "Next")
@@ -148,13 +149,14 @@ End
 '' convierto las estructuras de control condicionales
 Public Sub ConvertConditional()
 
-  Dim sVala, sCondi, sCondition, sSentencia As String
+  Dim sVala, sCondi, sCondition, sSentencia, sConditionType As String
   Dim p, p1, p2, p3 As Integer
 
   Dim i As Integer
 
   p = Instr2(sline, "@")
   p1 = Instr2(sline, "(")
+  sConditionType = Left(sLine, p1 - 1)
 
   sCondition = Mid(sLine, p1, p - p1 - 1)
   For Each sCondi In cDictBool
@@ -168,7 +170,7 @@ Public Sub ConvertConditional()
     sSentencia = ConvertSentences(Mid(sline, p + 1))
   End If
 
-  sLine = "if " & sCondition & sSentencia
+  sLine = sConditionType & sCondition & sSentencia
 
 End
 
@@ -220,7 +222,7 @@ Public Function ConvertDeclares() As String  ' convierte
   ' Fast Public Static Sub/Function/Procedure(s1 As Integer, Optional s2 as String[]= ["2","tiuch"], e as float = 3) as Integer    ' esto es una test
   ' Public a as string = "test"
 
-  Dim s, sType, sDeclare, sArgs, sName As String = "eoo", i, i2, i3 As Integer = 9
+  Dim s, sType, sDeclare, sArgs, sName As String = "eoo", i, i2, i3, nSpaces As Integer = 9
   Dim isProcedure As Boolean
 
   ' obtengo el tipo de la declaracion
@@ -297,9 +299,9 @@ Public Function ConvertDeclares() As String  ' convierte
 
     End Select
 
-    If sPartes[1] = "Const" Then
+    If Left(sLine, 7) = " Const " Then
       sDeclareType = "const "
-      sline = Mid(sLine, 13)
+      sline = Mid(sLine, 8)
     End If
 
     ' ya trunque el tipo de declaracion, me queda el resto:
@@ -330,7 +332,9 @@ Public Function ConvertDeclares() As String  ' convierte
       ' veo si ya le asgna valor
       i3 = InStr(sType, "=")
       If i3 > 0 Then
-        sValue = Mid(sType, i3)
+        nSpaces = Len(Mid(sType, i3))
+        sValue = Trim(Mid(sType, i3))
+        nSpaces -= Len(sValue)
         sType = Left(sType, i3 - 1)
       Else
         sValue = ""
@@ -342,7 +346,7 @@ Public Function ConvertDeclares() As String  ' convierte
       For i = 0 To slxVarList.Max
         sVarList = slxVarList[i]
         sVarList = " " & Trim(sVarList) & " "
-        WriteLine(sDeclareType & sType & sVarList & sValue & ";", IIf(i <= slxVarList.Max, True, False))
+        WriteLine(sDeclareType & sType & sVarList & sValue & ";" & String(nSpaces, " "), IIf(i <= slxVarList.Max, True, False))
       Next
 
     Loop
@@ -479,9 +483,12 @@ Public Sub ConvertLang()
   Endif
 
   ' analizo
+  If (Left(sLine, 3) = "if ") Or (Left(sLine, 9) = "} else if") Then
+    ConvertConditional
+  End If
   Select Case Lower(sPartes[0])
-    Case "if"       ' if (condition) @
-      ConvertConditional()
+      ' Case "if"       ' if (condition) @
+      '   ConvertConditional()
     Case "case", "default"
       sLine &= ":"
     Case "foreach", "swich"
