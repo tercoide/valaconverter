@@ -10,14 +10,17 @@ Public iIndex As Integer
 Public iSpaces As Integer
 Public sComments As String
 
+' diccionarios
 Public cDictionary As New Collection
 Public cDictBool As New Collection
+Public cDictSentences As New Collection
 
 Public cFunctions As New Collection   ' acumulo las funciones que voy encontrando
 Public SelectOpen As Boolean
 Public ForOpen As Boolean
 Public EndOpen As Boolean
 Public IfOpen As Boolean
+Public SwitchOpen As Boolean
 
 Public Sub Init()
 
@@ -38,7 +41,7 @@ Public Sub Init()
   cDictionary.Add("string", "String")
 
   ' estructuras de control
-  cDictionary.Add("swich (", "Select Case") 'requiere un ) final
+  cDictionary.Add("switch (", "Select Case") 'requiere un ) final
   cDictionary.Add("foreach (", "For Each")  'requiere un ) final
   cDictionary.Add("for (", "For")           'requiere un ) final
   cDictionary.Add("in", "In")
@@ -56,6 +59,8 @@ Public Sub Init()
   cDictionary.Add("default", "Case Else")
   cDictionary.Add("} else {", "Else")
   cDictionary.Add("case", "Case")
+  cDictionary.Add("+", "&")
+  cDictionary.Add("main", "Main")
 
   ' declaraciones
   cDictionary.Add("", "Fast")
@@ -78,6 +83,9 @@ Public Sub Init()
   cDictionary.Add("Math.cos", "Cos")
   cDictionary.Add("Math.tan", "Tan")
   cDictionary.Add("Math.PI", "Pi")
+
+  cDictSentences.Add("stdout.printf", "Print")
+  cDictSentences.Add("stdin.input", "Input")
 
 End
 
@@ -105,11 +113,11 @@ Public Sub ConvertLine()
   Dim p As Integer
   Dim f As Float
 
-  EndOpen = False
-  IfOpen = False
-  ForOpen = False
-  SelectOpen = False
-  f = 5 + Cos(Pi)
+  ' EndOpen = False
+  ' IfOpen = False
+  ' ForOpen = False
+  ' SelectOpen = False
+  ' f = 5 + Cos(Pi)
 
   ' leo una linea
   ReadLine
@@ -132,6 +140,14 @@ Public Sub ConvertLine()
   ' separo las palabras
   sPartes = Split(sLine, " ", Chr(34), True, True)
   If sPartes.Count = 0 Then Return
+
+  ' veo si es parte del luenguaje
+  For Each s In cDictSentences
+    If sPartes[0] = s Then
+      sLine = ConvertSentences(sLine)
+      Return
+    Endif
+  Next
   Select Case Lower(sPartes[0])
 
     Case "public", "private", "function", "sub", "property", "procedure", "dim", "static"
@@ -184,8 +200,20 @@ End
 
 Public Function ConvertSentences(sInstruction As String) As String
 
+  Dim sData As String, sNewLine As String = " + \"\\n\""
+
   If Right(sInstruction, 1) = "{" Then Return sInstruction
   If Right(sInstruction, 1) = "}" Then Return sInstruction
+
+  Select Case sPartes[0]
+    Case "Print"
+      sData = Trim(Mid(sInstruction, 7))
+      If sData = "" Then sData = "\"\""
+      sInstruction = "stdout.printf(" & sData & sNewLine & ")"
+    Case "Input"
+      sInstruction = Mid(sInstruction, 7) & "= stdin.read_line()"
+  End Select
+
   Return sInstruction & ";"
 
 End
@@ -247,9 +275,10 @@ Public Function ConvertDeclares() As String  ' convierte
     i2 = InStr(sLine, ")", -1000)
     i3 = InstrReverse(sLine, " ", i)
     sArgs = Trim(Mid(sLine, i + 1, i2 - i - 1))
-    If sArgs = "" Then sargs = " void "
+    'If sArgs = "" Then sargs = " void "
 
     sName = Mid(sLine, i3 + 1, i - i3 - 1)
+    If sName = "Main" Then sName = "main"
 
     ' reconstruyo
     ' public/private/static
@@ -371,7 +400,7 @@ Public Function ConvertArgs(sArguments As String) As String
   For Each sArg In slxArg
     i = InStr(sArg, " As ")
     sVar = Trim(Left(sArg, i - 1))
-    sType = Mid(sArg, i + 4)
+    If i > 0 Then sType = Mid(sArg, i + 4) Else sType = ""
 
     pEqual = Instr2(sType, "=")
     If pEqual > 0 Then ' es un Optional
@@ -403,7 +432,7 @@ Public Function GetType(gbType As String) As String
   End If
   If valaType = "float" Then Return "double" & sBrackets
   If valaType = "single" Then Return "float" & sBrackets
-  If valaType = "integer" Then Return "integer" & sBrackets
+  If valaType = "integer" Then Return "int" & sBrackets
   If valaType = "string" Then Return "string" & sBrackets
   If valaType = "boolean" Then Return "bool" & sBrackets
   If valaType = "long" Then Return "long" & sBrackets
@@ -489,10 +518,25 @@ Public Sub ConvertLang()
   Select Case Lower(sPartes[0])
       ' Case "if"       ' if (condition) @
       '   ConvertConditional()
-    Case "case", "default"
-      sLine &= ":"
-    Case "foreach", "swich"
+      ' Case , "default"
+      '   sLine &= ":"
+    Case "foreach", "switch"
       sLine &= ") {"
+    Case "case", "default"
+      'sLine &= ") {"
+
+      If SwitchOpen = True Then
+        WriteLine("break;")
+      Else
+        SwitchOpen = True
+      Endif
+      sLine &= ":"
+    Case "}"
+      If SwitchOpen = True Then
+        WriteLine("break;")
+        SwitchOpen = False
+
+      Endif
 
     Case "for"
 
